@@ -155,11 +155,16 @@ local function start_pos_in_selection()
     start_col, end_col = end_col, start_col
   end
 
-  return { start_row, start_col }
+  return { start_row, math.max(start_col - 1, 0) }
 end
 
 local function enter_normal_mode()
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<esc>", true, false, true), "x", false)
+  -- vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<esc>", true, false, true), "x", false)
+  vim.api.nvim_feedkeys(
+    vim.api.nvim_replace_termcodes("<Esc>", true, false, true),
+    "x",
+    false
+  )
 end
 
 function macro.play_macro()
