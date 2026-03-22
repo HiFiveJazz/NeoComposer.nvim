@@ -132,9 +132,11 @@ function ui.get_menu_items()
 end
 
 function ui.get_bg_color()
-	local output = vim.api.nvim_exec("highlight Normal", true)
-	local bg_color = output:match("guibg=(#[0-9a-fA-F]+)")
-	return bg_color
+  local hl = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+  if not hl or not hl.bg then
+    return nil
+  end
+  return string.format("#%06x", hl.bg)
 end
 
 function ui.clear_preview()
@@ -184,7 +186,12 @@ function ui.create_window()
 	for hl, val in pairs(config.window.winhl) do
 		winhl = winhl .. hl .. ":" .. val .. ","
 	end
-	api.nvim_win_set_option(WIN_ID, "winhl", winhl:sub(1, -2))
+
+vim.api.nvim_set_option_value(
+  "winhl",
+  winhl:sub(1, -2),
+  { win = WIN_ID }
+)
 
 	return {
 		bufnr = bufnr,
@@ -243,10 +250,10 @@ function ui.toggle_macro_menu()
 		api.nvim_buf_set_keymap(BUFH, mode, lhs, rhs, { silent = true })
 	end
 
-	api.nvim_buf_set_name(BUFH, "neocomposer-menu")
-	api.nvim_buf_set_option(BUFH, "buftype", "acwrite")
-	api.nvim_buf_set_option(BUFH, "bufhidden", "delete")
-	api.nvim_buf_set_lines(BUFH, 0, #contents, false, contents)
+vim.api.nvim_buf_set_name(BUFH, "neocomposer-menu")
+vim.api.nvim_set_option_value("buftype", "acwrite", { buf = BUFH })
+vim.api.nvim_set_option_value("bufhidden", "delete", { buf = BUFH })
+vim.api.nvim_buf_set_lines(BUFH, 0, -1, false, contents)
 
 	map("n", "q", "<Cmd>lua require('NeoComposer.ui').toggle_macro_menu()<CR>")
 	map("n", "yq", "<Cmd>lua require('NeoComposer.ui').yank_macro_from_menu()<CR>")
@@ -294,12 +301,16 @@ function ui.edit_macros()
 		style = "minimal",
 	})
 
-	local bg_color = ui.get_bg_color()
-	vim.cmd(string.format("highlight MacroEditorNormal guibg=%s", bg_color))
-	api.nvim_win_set_option(win_id, "winhl", "Normal:MacroEditorNormal")
+  local bg_color = ui.get_bg_color()
 
-	api.nvim_win_set_option(win_id, "number", true)
-	api.nvim_buf_set_option(bufnr, "bufhidden", "wipe")
+  -- Better: use nvim_set_hl instead of :highlight
+  vim.api.nvim_set_hl(0, "MacroEditorNormal", {
+    bg = bg_color,
+  })
+
+  vim.api.nvim_set_option_value("winhl", "Normal:MacroEditorNormal", { win = win_id })
+  vim.api.nvim_set_option_value("number", true, { win = win_id })
+  vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = bufnr })
 
 	local macros = state.get_macros()
 	local contents = {}
