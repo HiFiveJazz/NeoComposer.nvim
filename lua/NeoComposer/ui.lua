@@ -27,13 +27,29 @@ function ui.close_macro_editor()
 end
 
 function ui.save_macro_content_in_menu()
-	state.set_macros(ui.get_menu_items())
-	macro.update_and_set_queued_macro(1, false)
+	local items = ui.get_menu_items()
+	state.set_macros(items)
+
+	if #items > 0 then
+		macro.update_and_set_queued_macro(1, false)
+	else
+		state.set_queued_macro()
+	end
+
+	require("NeoComposer.store").save_macros_to_database()
 end
 
 function ui.save_macro_content_in_editor()
-	state.set_macros(ui.get_menu_items())
-	macro.update_and_set_queued_macro(1, false)
+	local items = ui.get_menu_items()
+	state.set_macros(items)
+
+	if #items > 0 then
+		macro.update_and_set_queued_macro(1, false)
+	else
+		state.set_queued_macro()
+	end
+
+	require("NeoComposer.store").save_macros_to_database()
 end
 
 function ui.cycle_next()
@@ -255,6 +271,16 @@ function ui.toggle_macro_menu()
 			pcall(require("NeoComposer.ui").save_macro_content_in_menu)
 		end,
 	})
+
+  autocmd("BufWriteCmd", {
+      nested = true,
+      buffer = BUFH,
+      group = "NeoComposer",
+      callback = function()
+        pcall(require("NeoComposer.ui").save_macro_content_in_menu)
+        vim.bo[BUFH].modified = false
+      end,
+    })
 end
 
 function ui.edit_macros()
